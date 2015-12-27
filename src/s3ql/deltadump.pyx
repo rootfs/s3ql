@@ -106,7 +106,7 @@ MAX_BLOB_SIZE = 4096
 
 # Scale factor from time floats to integers
 # 1e9 would be perfect, but introduces rounding errors
-cdef double time_scale = 1 << 30
+cdef int64_t time_scale = 1 << 30
 
 cdef inline int fwrite(const_void * buf, size_t len_, FILE * fp) except -1:
     '''Call libc's fwrite() and raise exception on failure'''
@@ -374,7 +374,7 @@ def dump_table(table, order, columns, db, fh):
                     write_integer(int64, fp)
 
                 elif col_types[i] == _TIME:
-                    int64 = <int64_t> (sqlite3_column_double(stmt, i) * time_scale)
+                    int64 = <int64_t> (sqlite3_column_int64(stmt, i) * time_scale)
                     tmp = int64
                     int64 -= int64_prev[i] + col_args[i]
                     int64_prev[i] = tmp
@@ -518,7 +518,7 @@ def load_table(table, columns, db, fh, trx_rows=5000):
                     read_integer(&int64, fp)
                     int64 += col_args[j] + int64_prev[j]
                     int64_prev[j] = int64
-                    SQLITE_CHECK_RC(sqlite3_bind_double(stmt, j + 1, int64 / time_scale),
+                    SQLITE_CHECK_RC(sqlite3_bind_int64(stmt, j + 1, int64 / time_scale),
                                     SQLITE_OK, sqlite3_db)
 
                 elif col_types[j] == _BLOB:
